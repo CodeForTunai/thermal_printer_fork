@@ -53,7 +53,9 @@ class ThermalPrinterPlugin : FlutterPlugin, MethodCallHandler, PluginRegistry.Re
     private var isBle: Boolean = false
     private var isScan: Boolean = false
     lateinit var adapter: USBPrinterService
-    private lateinit var bluetoothService: BluetoothService
+    private val bluetoothService: BluetoothService by lazy {
+        BluetoothService.getInstance(bluetoothHandler)
+    }
 
 
     private val usbHandler = object : Handler(Looper.getMainLooper()) {
@@ -200,7 +202,6 @@ class ThermalPrinterPlugin : FlutterPlugin, MethodCallHandler, PluginRegistry.Re
         adapter = USBPrinterService.getInstance(usbHandler)
         adapter.init(context)
 
-        bluetoothService = BluetoothService.getInstance(bluetoothHandler)
     }
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
