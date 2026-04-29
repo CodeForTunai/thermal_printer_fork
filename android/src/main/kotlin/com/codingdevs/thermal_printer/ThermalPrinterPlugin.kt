@@ -349,24 +349,30 @@ class ThermalPrinterPlugin : FlutterPlugin, MethodCallHandler, PluginRegistry.Re
     }
 
     private fun printText(text: String?, result: Result) {
-        if (text.isNullOrEmpty()) return
+        if (text.isNullOrEmpty()) {
+            result.success(false)
+            return
+        }
         adapter.setHandler(usbHandler)
-        adapter.printText(text)
-        result.success(true)
+        result.success(adapter.printText(text))
     }
 
     private fun printRawData(base64Data: String?, result: Result) {
-        if (base64Data.isNullOrEmpty()) return
+        if (base64Data.isNullOrEmpty()) {
+            result.success(false)
+            return
+        }
         adapter.setHandler(usbHandler)
-        adapter.printRawData(base64Data)
-        result.success(true)
+        result.success(adapter.printRawData(base64Data))
     }
 
     private fun printBytes(bytes: ArrayList<Int>?, result: Result) {
-        if (bytes == null) return
+        if (bytes == null) {
+            result.success(false)
+            return
+        }
         adapter.setHandler(usbHandler)
-        adapter.printBytes(bytes)
-        result.success(true)
+        result.success(adapter.printBytes(bytes))
     }
 
     private fun checkPermissions(): Boolean {

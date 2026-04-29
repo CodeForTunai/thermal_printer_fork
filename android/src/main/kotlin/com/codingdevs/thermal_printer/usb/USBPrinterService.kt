@@ -19,6 +19,7 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
     private var mContext: Context? = null
     private var mUSBManager: UsbManager? = null
     private var mPermissionIndent: PendingIntent? = null
+    private var isReceiverRegistered: Boolean = false
     private var mUsbDevice: UsbDevice? = null
     private var mUsbDeviceConnection: UsbDeviceConnection? = null
     private var mUsbInterface: UsbInterface? = null
@@ -68,16 +69,22 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
     }
 
     fun init(reactContext: Context?) {
-        mContext = reactContext
-        mUSBManager = mContext!!.getSystemService(Context.USB_SERVICE) as UsbManager
-        mPermissionIndent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            PendingIntent.getBroadcast(mContext, 0, Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_MUTABLE)
-        } else {
-            PendingIntent.getBroadcast(mContext, 0, Intent(ACTION_USB_PERMISSION), 0)
+        if (reactContext == null) {
+            Log.e(LOG_TAG, "Cannot initialize USBPrinterService with null context")
+            return
         }
-        val filter = IntentFilter(ACTION_USB_PERMISSION)
-        filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
-        mContext!!.registerReceiver(mUsbDeviceReceiver, filter)
+
+        mContext = reactContext.applicationContext
+        mUSBManager = mContext?.getSystemService(Context.USB_SERVICE) as? UsbManager
+        ensurePermissionIntent()
+
+        if (!isReceiverRegistered) {
+            val filter = IntentFilter(ACTION_USB_PERMISSION)
+            filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
+            mContext?.registerReceiver(mUsbDeviceReceiver, filter)
+            isReceiverRegistered = true
+        }
+
         Log.v(LOG_TAG, "ESC/POS Printer initialized")
     }
 
@@ -103,6 +110,21 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
 
     fun selectDevice(vendorId: Int, productId: Int): Boolean {
 //        Log.v(LOG_TAG, " status usb ______ $state")
+        if (mUSBManager == null) {
+            Log.e(LOG_TAG, "USB Manager is not initialized")
+            state = STATE_USB_NONE
+            mHandler?.obtainMessage(STATE_USB_NONE)?.sendToTarget()
+            return false
+        }
+
+        val permissionIntent = ensurePermissionIntent()
+        if (permissionIntent == null) {
+            Log.e(LOG_TAG, "USB permission PendingIntent is not initialized")
+            state = STATE_USB_NONE
+            mHandler?.obtainMessage(STATE_USB_NONE)?.sendToTarget()
+            return false
+        }
+
         if ((mUsbDevice == null) || (mUsbDevice!!.vendorId != vendorId) || (mUsbDevice!!.productId != productId)) {
             synchronized(printLock) {
                 closeConnectionIfExists()
@@ -111,10 +133,16 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
                     if ((usbDevice.vendorId == vendorId) && (usbDevice.productId == productId)) {
                         Log.v(LOG_TAG, "Request for device: vendor_id: " + usbDevice.vendorId + ", product_id: " + usbDevice.productId)
                         closeConnectionIfExists()
-                        mUSBManager!!.requestPermission(usbDevice, mPermissionIndent)
+                        if (mUSBManager!!.hasPermission(usbDevice)) {
+                            mUsbDevice = usbDevice
+                            state = STATE_USB_CONNECTED
+                            mHandler?.obtainMessage(STATE_USB_CONNECTED)?.sendToTarget()
+                            return true
+                        }
+                        mUSBManager!!.requestPermission(usbDevice, permissionIntent)
                         state = STATE_USB_CONNECTING
                         mHandler?.obtainMessage(STATE_USB_CONNECTING)?.sendToTarget()
-                        return true
+                        return false
                     }
                 }
                 return false
@@ -268,5 +296,17 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
             }
             return mInstance!!
         }
+    }
+
+    private fun ensurePermissionIntent(): PendingIntent? {
+        if (mPermissionIndent != null) return mPermissionIndent
+        val context = mContext ?: return null
+        val permissionIntent = Intent(ACTION_USB_PERMISSION).setPackage(context.packageName)
+        mPermissionIndent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            PendingIntent.getBroadcast(context, 0, permissionIntent, PendingIntent.FLAG_MUTABLE)
+        } else {
+            PendingIntent.getBroadcast(context, 0, permissionIntent, 0)
+        }
+        return mPermissionIndent
     }
 }
