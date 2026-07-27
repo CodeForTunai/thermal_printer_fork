@@ -1,3 +1,37 @@
+#import <TargetConditionals.h>
+
+#if TARGET_OS_SIMULATOR
+
+#import <Flutter/Flutter.h>
+
+@interface ThermalPrinterPlugin : NSObject <FlutterPlugin>
+@end
+
+@implementation ThermalPrinterPlugin
+
++ (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
+  FlutterMethodChannel* channel = [FlutterMethodChannel
+      methodChannelWithName:@"thermal_printer/methods"
+            binaryMessenger:[registrar messenger]];
+  ThermalPrinterPlugin* instance = [[ThermalPrinterPlugin alloc] init];
+  [registrar addMethodCallDelegate:instance channel:channel];
+}
+
+- (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
+  if ([call.method isEqualToString:@"isAvailable"] ||
+      [call.method isEqualToString:@"isConnected"] ||
+      [call.method isEqualToString:@"isOn"]) {
+    result(@NO);
+    return;
+  }
+
+  result(FlutterMethodNotImplemented);
+}
+
+@end
+
+#else
+
 #import "ThermalPrinter.h"
 #import "ConnecterManager.h"
 
@@ -181,3 +215,5 @@
 }
 
 @end
+
+#endif

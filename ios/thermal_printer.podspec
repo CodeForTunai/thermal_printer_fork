@@ -19,9 +19,11 @@ A new Flutter plugin project.
   s.dependency 'Flutter'
   s.platform = :ios, '9.0'
 
-  # Import all * .a libraries in the Classes folder
+  # GSDK includes a device implementation and a simulator stub. The simulator
+  # does not support printer hardware, but its slice keeps Flutter builds
+  # linkable on Apple-silicon simulators.
   s.frameworks = ["SystemConfiguration", "CoreTelephony","WebKit"]
-  s.vendored_libraries = '**/*.a'
+  s.vendored_libraries = 'libGSDK.xcframework'
 
   # Flutter.framework does not contain a i386 slice.
   # s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }

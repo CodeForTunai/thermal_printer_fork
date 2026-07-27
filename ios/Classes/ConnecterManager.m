@@ -4,6 +4,10 @@
 //
 //
 
+#import <TargetConditionals.h>
+
+#if !TARGET_OS_SIMULATOR
+
 #import "ConnecterManager.h"
 
 @interface ConnecterManager(){
@@ -106,3 +110,5 @@ static dispatch_once_t once;
 }
 
 @end
+
+#endif
