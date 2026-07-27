@@ -23,7 +23,7 @@ A new Flutter plugin project.
   # does not support printer hardware, but its slice keeps Flutter builds
   # linkable on Apple-silicon simulators.
   s.frameworks = ["SystemConfiguration", "CoreTelephony","WebKit"]
-  s.vendored_libraries = 'libGSDK.xcframework'
+  s.vendored_frameworks = 'libGSDK.xcframework'
 
   # Flutter.framework does not contain a i386 slice.
   # s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
